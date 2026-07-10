@@ -2,7 +2,7 @@ name: OcrServerLegacy
 options:
   bundleIdPrefix: site.riddleling.app
   deploymentTarget:
-    iOS: "12.0"
+    iOS: "16.0"
   xcodeVersion: "15.4"
   createIntermediateGroups: true
 
@@ -23,7 +23,7 @@ targets:
         SWIFT_VERSION: "5.0"
         TARGETED_DEVICE_FAMILY: "1,2"
         CODE_SIGN_STYLE: Automatic
-        IPHONEOS_DEPLOYMENT_TARGET: "12.0"
+        IPHONEOS_DEPLOYMENT_TARGET: "16.0"
         PRODUCT_NAME: "OCR Server"
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         ENABLE_PREVIEWS: "NO"

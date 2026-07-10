@@ -48,7 +48,7 @@ jobs:
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGNING_ALLOWED=NO \
-            IPHONEOS_DEPLOYMENT_TARGET=12.0 \
+            IPHONEOS_DEPLOYMENT_TARGET=16.0 \
             SWIFT_VERSION=5.0 \
             | xcpretty
       - name: Inspect archive contents
@@ -85,7 +85,7 @@ jobs:
         run: |
           echo "## 📱 Build Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "- **Target**: iOS 12.0+" >> $GITHUB_STEP_SUMMARY
+          echo "- **Target**: iOS 16.0+" >> $GITHUB_STEP_SUMMARY
           echo "- **Architecture**: arm64" >> $GITHUB_STEP_SUMMARY
           echo "- **Signing**: Unsigned (needs re-signing)" >> $GITHUB_STEP_SUMMARY
           echo "- **IPA Size**: $(du -h build/OcrServerLegacy-unsigned.ipa | cut -f1)" >> $GITHUB_STEP_SUMMARY
