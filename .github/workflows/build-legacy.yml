@@ -24,7 +24,9 @@ jobs:
           brew install xcodegen
 
       - name: Generate Xcode Project
-        run: xcodegen generate
+        run: |
+          xcodegen generate
+          sed -i '' 's/objectVersion = [0-9]*/objectVersion = 63/g' OcrServerLegacy.xcodeproj/project.pbxproj || true
 
       - name: Show project structure
         run: |
