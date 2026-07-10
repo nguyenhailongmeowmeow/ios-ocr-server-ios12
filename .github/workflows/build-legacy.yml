@@ -35,6 +35,7 @@ jobs:
 
       - name: Build Archive (unsigned)
         run: |
+          set -o pipefail
           xcodebuild \
             -project OcrServerLegacy.xcodeproj \
             -scheme OcrServerLegacy \
@@ -47,17 +48,30 @@ jobs:
             CODE_SIGNING_ALLOWED=NO \
             IPHONEOS_DEPLOYMENT_TARGET=12.0 \
             SWIFT_VERSION=5.0 \
-            | tail -50
+            2>&1 | tail -100
+
+      - name: Inspect archive contents
+        run: |
+          echo "=== Archive contents ==="
+          find build/OcrServerLegacy.xcarchive -name "*.app" -type d
+          ls -la build/OcrServerLegacy.xcarchive/Products/Applications/ 2>/dev/null || echo "No Applications dir"
+          ls -laR build/OcrServerLegacy.xcarchive/Products/ 2>/dev/null || echo "No Products dir"
 
       - name: Create IPA from Archive
         run: |
           mkdir -p build/Payload
-          cp -r build/OcrServerLegacy.xcarchive/Products/Applications/*.app build/Payload/
+          APP=$(find build/OcrServerLegacy.xcarchive -name "*.app" -type d | head -1)
+          if [ -z "$APP" ]; then
+            echo "ERROR: No .app found in archive"
+            exit 1
+          fi
+          echo "Found app: $APP"
+          cp -r "$APP" build/Payload/
           cd build
           zip -r OcrServerLegacy-unsigned.ipa Payload/
           ls -la OcrServerLegacy-unsigned.ipa
-          echo "✅ IPA created successfully!"
-          echo "📦 Size: $(du -h OcrServerLegacy-unsigned.ipa | cut -f1)"
+          echo "IPA created successfully!"
+          echo "Size: $(du -h OcrServerLegacy-unsigned.ipa | cut -f1)"
 
       - name: Upload IPA Artifact
         uses: actions/upload-artifact@v4
