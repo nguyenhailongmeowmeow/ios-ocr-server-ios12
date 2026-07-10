@@ -18,8 +18,8 @@ class SimpleHTTPServer {
     var port: Int = 8000
     var ocrEngine = OCREngine()
     
-    // Max upload size: 100MB
-    private let maxBodySize = 100 * 1024 * 1024
+    // Max upload size: 20MB
+    private let maxBodySize = 20 * 1024 * 1024
     
     // MARK: - Start / Stop
     

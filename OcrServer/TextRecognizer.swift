@@ -22,17 +22,19 @@ class TextRecognizer {
     }
     
     func getOcrResult(data: Data) async -> OCRResult? {
-        // 嘗試取影像像素大小
-        guard let (W, H) = Self.imagePixelSize(from: data) else {
+        guard let cgImage = Self.createDownsampledImage(from: data) else {
             return nil
         }
+        
+        let W = cgImage.width
+        let H = cgImage.height
         
         var request = RecognizeTextRequest()
         request.recognitionLevel = recognitionLevel
         request.usesLanguageCorrection = usesLanguageCorrection
         request.automaticallyDetectsLanguage = automaticallyDetectsLanguage
         
-        let observations = (try? await request.perform(on: data)) ?? []
+        let observations = (try? await request.perform(on: cgImage, orientation: .up)) ?? []
         
         var lines: [String] = []
         var items: [OCRBoxItem] = []
@@ -94,14 +96,30 @@ class TextRecognizer {
         )
     }
     
-    private static func imagePixelSize(from data: Data) -> (Int, Int)? {
-        guard let src = CGImageSourceCreateWithData(data as CFData, nil),
-              let props = CGImageSourceCopyPropertiesAtIndex(src, 0, nil) as? [CFString: Any],
-              let w = (props[kCGImagePropertyPixelWidth] as? NSNumber)?.intValue,
-              let h = (props[kCGImagePropertyPixelHeight] as? NSNumber)?.intValue
-        else {
+    private static func createDownsampledImage(from data: Data) -> CGImage? {
+        guard let source = CGImageSourceCreateWithData(data as CFData, nil) else {
             return nil
         }
-        return (w, h)
+        
+        let maxDimension: CGFloat = 2000
+        
+        guard let props = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [CFString: Any],
+              let w = (props[kCGImagePropertyPixelWidth] as? NSNumber)?.doubleValue,
+              let h = (props[kCGImagePropertyPixelHeight] as? NSNumber)?.doubleValue
+        else {
+            return CGImageSourceCreateImageAtIndex(source, 0, nil)
+        }
+        
+        let longest = max(w, h)
+        guard longest > maxDimension else {
+            return CGImageSourceCreateImageAtIndex(source, 0, nil)
+        }
+        
+        let options: [CFString: Any] = [
+            kCGImageSourceCreateThumbnailFromImageAlways: true,
+            kCGImageSourceCreateThumbnailWithTransform: true,
+            kCGImageSourceThumbnailMaxPixelSize: maxDimension,
+        ]
+        return CGImageSourceCreateThumbnailAtIndex(source, 0, options as CFDictionary)
     }
 }

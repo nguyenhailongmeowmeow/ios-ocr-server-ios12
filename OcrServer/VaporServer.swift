@@ -259,7 +259,7 @@ actor VaporServer {
         }
 
         // POST /upload（限制收集本文大小，可自行調整）
-        app.on(.POST, "upload", body: .collect(maxSize: "100mb")) { [weak self] req async throws -> Response in
+        app.on(.POST, "upload", body: .collect(maxSize: "20mb")) { [weak self] req async throws -> Response in
             guard let self else { throw Abort(.internalServerError) }
 
             struct Upload: Content { var file: File }
@@ -356,7 +356,7 @@ actor VaporServer {
         }
         
         // POST /docOCR（限制收集本文大小，可自行調整）
-        app.on(.POST, "docOCR", body: .collect(maxSize: "100mb")) { [weak self] req async throws -> Response in
+        app.on(.POST, "docOCR", body: .collect(maxSize: "20mb")) { [weak self] req async throws -> Response in
             if #unavailable(iOS 26) {
                 // iOS 26 以下
                 return try Self.jsonResponse(

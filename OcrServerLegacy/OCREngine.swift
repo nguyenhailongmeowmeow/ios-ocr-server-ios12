@@ -59,10 +59,10 @@ class OCREngine {
     
     @available(iOS 13.0, *)
     private func performVisionOCR(imageData: Data, completion: @escaping (UploadResponse) -> Void) {
-        guard let (imgWidth, imgHeight) = imagePixelSize(from: imageData) else {
+        guard let cgImage = createDownsampledImage(from: imageData) else {
             let response = UploadResponse(
                 success: false,
-                message: "Failed to read image dimensions",
+                message: "Failed to create image from data",
                 ocr_result: "",
                 image_width: 0,
                 image_height: 0,
@@ -72,21 +72,8 @@ class OCREngine {
             return
         }
         
-        guard let cgImage = createCGImage(from: imageData) else {
-            let response = UploadResponse(
-                success: false,
-                message: "Failed to create image from data",
-                ocr_result: "",
-                image_width: imgWidth,
-                image_height: imgHeight,
-                ocr_boxes: []
-            )
-            completion(response)
-            return
-        }
-        
-        let W = imgWidth
-        let H = imgHeight
+        let W = cgImage.width
+        let H = cgImage.height
         let level = recognitionLevel
         let langCorrection = usesLanguageCorrection
         let autoDetect = automaticallyDetectsLanguage
@@ -165,21 +152,30 @@ class OCREngine {
     
     // MARK: - Helpers
     
-    private func imagePixelSize(from data: Data) -> (Int, Int)? {
-        guard let source = CGImageSourceCreateWithData(data as CFData, nil),
-              let props = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [CFString: Any],
-              let w = (props[kCGImagePropertyPixelWidth] as? NSNumber)?.intValue,
-              let h = (props[kCGImagePropertyPixelHeight] as? NSNumber)?.intValue
-        else {
-            return nil
-        }
-        return (w, h)
-    }
-    
-    private func createCGImage(from data: Data) -> CGImage? {
+    private func createDownsampledImage(from data: Data) -> CGImage? {
         guard let source = CGImageSourceCreateWithData(data as CFData, nil) else {
             return nil
         }
-        return CGImageSourceCreateImageAtIndex(source, 0, nil)
+        
+        let maxDimension: CGFloat = 2000
+        
+        guard let props = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [CFString: Any],
+              let w = (props[kCGImagePropertyPixelWidth] as? NSNumber)?.doubleValue,
+              let h = (props[kCGImagePropertyPixelHeight] as? NSNumber)?.doubleValue
+        else {
+            return CGImageSourceCreateImageAtIndex(source, 0, nil)
+        }
+        
+        let longest = max(w, h)
+        guard longest > maxDimension else {
+            return CGImageSourceCreateImageAtIndex(source, 0, nil)
+        }
+        
+        let options: [CFString: Any] = [
+            kCGImageSourceCreateThumbnailFromImageAlways: true,
+            kCGImageSourceCreateThumbnailWithTransform: true,
+            kCGImageSourceThumbnailMaxPixelSize: maxDimension,
+        ]
+        return CGImageSourceCreateThumbnailAtIndex(source, 0, options as CFDictionary)
     }
 }
