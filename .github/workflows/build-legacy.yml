@@ -7,15 +7,15 @@ on:
 
 jobs:
   build:
-    runs-on: macos-14  # macOS Sonoma runner
+    runs-on: macos-15  # macOS Sequoia runner (Xcode 16)
     
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
 
-      - name: Select Xcode 15
+      - name: Select Xcode 16
         run: |
-          sudo xcode-select -s /Applications/Xcode_15.4.app || sudo xcode-select -s /Applications/Xcode_15.3.app || sudo xcode-select -s /Applications/Xcode.app
+          sudo xcode-select -s /Applications/Xcode_16.2.app || sudo xcode-select -s /Applications/Xcode_16.1.app || sudo xcode-select -s /Applications/Xcode_16.app || sudo xcode-select -s /Applications/Xcode.app
           xcodebuild -version
 
       - name: Install XcodeGen
