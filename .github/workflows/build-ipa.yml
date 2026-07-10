@@ -1,0 +1,75 @@
+name: Build IPA (iOS 16+)
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  PROJECT: OcrServer.xcodeproj
+  SCHEME: OcrServer
+
+jobs:
+  build:
+    runs-on: macos-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select Xcode
+        run: |
+          sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
+          xcodebuild -version
+
+      - name: Resolve Swift Packages
+        run: |
+          xcodebuild -resolvePackageDependencies \
+            -project "${{ env.PROJECT }}" \
+            -scheme "${{ env.SCHEME }}" \
+            -clonedSourcePackagesDirPath "${{ runner.temp }}/SourcePackages"
+
+      - name: Archive
+        run: |
+          xcodebuild archive \
+            -project "${{ env.PROJECT }}" \
+            -scheme "${{ env.SCHEME }}" \
+            -configuration Release \
+            -archivePath "${{ runner.temp }}/OcrServer.xcarchive" \
+            -destination 'generic/platform=iOS' \
+            -clonedSourcePackagesDirPath "${{ runner.temp }}/SourcePackages" \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO
+
+      - name: Create IPA
+        run: |
+          mkdir -p build/Payload
+          APP=$(find "${{ runner.temp }}/OcrServer.xcarchive" -name "*.app" -type d | head -1)
+          if [ -z "$APP" ]; then
+            echo "ERROR: No .app found in archive"
+            exit 1
+          fi
+          echo "Found app: $APP"
+          cp -r "$APP" build/Payload/
+          cd build
+          zip -r OcrServer-iOS16.ipa Payload/
+          echo "IPA size: $(du -h OcrServer-iOS16.ipa | cut -f1)"
+
+      - name: Upload IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: OcrServer-iOS16.ipa
+          path: build/OcrServer-iOS16.ipa
+          retention-days: 90
+
+      - name: Summary
+        run: |
+          echo "## OCR Server iOS 16 IPA" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Target**: iOS 16.0+" >> $GITHUB_STEP_SUMMARY
+          echo "- **Version**: 1.3.9" >> $GITHUB_STEP_SUMMARY
+          echo "- **Signing**: Unsigned (use Sideloadly/AltStore to install)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Install:" >> $GITHUB_STEP_SUMMARY
+          echo "1. Download IPA from Artifacts" >> $GITHUB_STEP_SUMMARY
+          echo "2. Use **Sideloadly**, **AltStore**, or **SideStore** to sign and install" >> $GITHUB_STEP_SUMMARY
